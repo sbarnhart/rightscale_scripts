@@ -9,7 +9,7 @@ echo "Authenticating and retrieving cookie for $email @ $acct_id.  Saving cookie
 
 ### Execute API Call to retrieve cookie and save it to mycookie
 account_href="/api/accounts/$acct_id"
-curl -H X_API_VERSION:1.5 -c mycookie \
+curl -i -H X_API_VERSION:1.5 -c mycookie \
 -d email="$email" \
 -d password="$pass" \
 -d account_href="$account_href" \
