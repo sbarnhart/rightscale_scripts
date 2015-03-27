@@ -25,7 +25,6 @@ curl -s -H X_API_VERSION:1.5 -c mycookie \
 -d account_href="$account_href" \
 -X POST https://my.rightscale.com/api/session
 
-
 customer_acct=$acct_id
 # Use cookie to authenticate and observe account
 ### Execute API Call to retrieve cookie and save it to mycookie
