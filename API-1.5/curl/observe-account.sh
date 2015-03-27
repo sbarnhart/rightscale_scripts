@@ -34,9 +34,6 @@ curl --silent -H X_API_VERSION:1.5 -b mycookie \
 -d Referer="https://us-3.rightscale.com/global//admin_accounts/$customer_acct" \
 -X POST https://us-3.rightscale.com/global//admin_accounts/$customer_acct/access &> /dev/null
 
-# Cleanup
-rm -f mycookie
-
 # Open the account page in the browser
 ### Find out what OS we are running on so we can launch the browser properly
 platform='unknown'
