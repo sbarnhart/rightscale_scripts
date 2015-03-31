@@ -7,7 +7,7 @@ require 'right_api_client'
 email = ENV['rs_email'] || 'your@email.com'     # RS User Account
 pass = ENV['rs_pswd'] || 'yourpassword'         # RS User Password
 acct_id = ENV['rs_acct'] || '12345'             # RS Account to backup scripts from
-timeout = ENV['rs_timeout'] || 60          # Timeout in Seconds
+timeout = ENV['rs_timeout'] || 60               # Timeout in Seconds
 backup_location = ENV['rs_backup_loc'] || '.'   # Backup location - NO trailing slash
 
 
