@@ -28,7 +28,7 @@ puts "Authenticated!"
 puts "Auditing RightScale Account: #{acct_id}"
 
 File.open('audit.csv', 'w') do |f|
-  f.puts '"deployment_name","server_type","instace_lineage","instance_name","instance_type","instance_datacenter","instance_state"'
+  f.puts '"deployment_name","server_type","instance_lineage","instance_name","instance_type","instance_datacenter","instance_state"'
     @client.deployments.index.each do |deployment|
 
       deployment_name=deployment.name
