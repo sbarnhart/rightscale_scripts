@@ -28,10 +28,11 @@ puts "Authenticated!"
 puts "Auditing RightScale Account: #{acct_id}"
 
 File.open('audit.csv', 'w') do |f|
-  f.puts '"deployment_name","server_type","instance_lineage","instance_name","instance_type","instance_datacenter","instance_state"'
+  f.puts '"deployment_name","server_type","instance_lineage","instance_name","instance_type","instance_datacenter","instance_state","instance_href"'
     @client.deployments.index.each do |deployment|
 
       deployment_name=deployment.name
+      puts "Auditing Deployment: #{deployment_name}"
 
       # Query all Servers in deployment
       deployment.servers.index.each do |server|
@@ -41,23 +42,28 @@ File.open('audit.csv', 'w') do |f|
           instance_lineage='current'
           instance_name=server.show.current_instance.show(:view => "extended").name.to_s
           instance_state=server.show.current_instance.show(:view => "extended").state.to_s
+          instance_href=server.show.current_instance.show(:view =>'extended').href.to_s
           instance_datacenter=server.show.current_instance.show(:view =>'extended').datacenter.show.name.to_s
           instance_type=''
           if defined? server.show.current_instance.show(:view => "extended").instance_type == "method"
             instance_type=server.show.current_instance.show(:view => "extended").instance_type.show.name.to_s
           end
-          f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\""
+          f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\",\"#{instance_href}\""
+          puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\",\"#{instance_href}\""
 
         else #else current_instance does not exist.. will audit next instance
           instance_lineage='next'
           instance_name=server.show.next_instance.show.name.to_s
           instance_state=server.show.next_instance.show(:view => "extended").state.to_s
+          instance_href=server.show.next_instance.show(:view =>'extended').href.to_s
           instance_datacenter=server.show.next_instance.show(:view => "extended").cloud.show.name.to_s
           instance_type=''
-          if defined? server.show.next_instance.show(:view => "extended").instance_type == "method"
+          if defined? server.show.next_instance.show(:view => "extended").instance_type.show.name == "method"
             instance_type=server.show.next_instance.show(:view => "extended").instance_type.show.name.to_s
           end
-          f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\""
+          f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\",\"#{instance_href}\""
+          puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\",\"#{instance_href}\""
+
 
         end #end if current_instances
       end #end servers.each
@@ -73,23 +79,28 @@ File.open('audit.csv', 'w') do |f|
             instance_lineage='current'
             instance_name=instance.show(:view => "extended").name.to_s
             instance_state=instance.show(:view => "extended").state.to_s
+            instance_href=instance.show(:view => "extended").href.to_s
             instance_datacenter=instance.show(:view =>'extended').cloud.show.name.to_s
             instance_type=''
-            if defined? instance.show(:view => "extended").instance_type == "method"
+            if defined? instance.show(:view => "extended").instance_type.show.name == "method"
               instance_type=instance.instance_type.show.name.to_s
             end
-            f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\""
-          end
+            f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\",\"#{instance_href}\""
+            puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\",\"#{instance_href}\""
+          end #end current_instances.each
+
         else
           instance_lineage='next'
           instance_name=sa.next_instance.show(:view => "extended").name.to_s
           instance_state=sa.next_instance.show(:view => "extended").state.to_s
+          instance_href=sa.next_instance.show(:view => "extended").href.to_s
           instance_datacenter=sa.next_instance.show(:view =>'extended').cloud.show.name.to_s
           instance_type=''
-          if defined? sa.next_instance.show(:view => "extended").instance_type == "method"
+          if defined? sa.next_instance.show(:view => "extended").instance_type.show.name == "method"
             instance_type=sa.next_instance.show(:view => "extended").instance_type.show.name.to_s
           end
-          f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\""
+          f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\",\"#{instance_href}\""
+          puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\",\"#{instance_href}\""
 
         end #end if count==0
       end#end server_arrays.each
