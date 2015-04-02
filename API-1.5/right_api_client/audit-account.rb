@@ -2,7 +2,6 @@
 
 require 'rubygems'
 require 'right_api_client'
-require 'pp'
 
 
 
@@ -28,29 +27,73 @@ puts "Authenticated!"
 
 puts "Auditing RightScale Account: #{acct_id}"
 
-@client.deployments.index(:filter => ['name==bk.']).each do |deployment|
+File.open('audit.csv', 'w') do |f|
+  f.puts '"deployment_name","server_type","instace_lineage","instance_name","instance_type","instance_datacenter","instance_state"'
+    @client.deployments.index.each do |deployment|
 
-  puts "DEPLOYMENT:  #{deployment.name}"
+      deployment_name=deployment.name
 
-  deployment.servers.index.each do |server|
-    # pp server.methods:
-    # [:links, :launch, :clone, :deployment, :next_instance, :alert_specs, :alerts, :created_at, :state, :updated_at, :description, :name, :href, :destroy,     :update, :show, :client, :attributes, :associations, :actions, :raw, :resource_type, :inspect, :[], :method_missing, :define_instance_method, :api_methods, :get_associated_resources, :has_id, :add_id_and_params_to_path, :insert_in_path, :is_singular?, :get_href_from_links, :get_and_delete_href_from_links, :simple_singularize, :get_singular, :fix_array_of_hashes, :pretty_print, :pretty_print_cycle, :pretty_print_instance_variables, :pretty_print_inspect, :to_json, :nil?, :===, :=~, :!~, :eql?, :hash, :<=>, :class, :singleton_class, :dup, :taint, :tainted?, :untaint, :untrust, :untrusted?, :trust, :freeze, :frozen?, :to_s, :methods, :singleton_methods, :protected_methods, :private_methods, :public_methods, :instance_variables, :instance_variable_get, :instance_variable_set, :instance_variable_defined?, :remove_instance_variable, :instance_of?, :kind_of?, :is_a?, :tap, :send, :public_send, :respond_to?, :extend, :display, :method, :public_method, :define_singleton_method, :object_id, :to_enum, :enum_for, :pretty_inspect, :==, :equal?, :!, :!=, :instance_eval, :instance_exec, :__send__, :__id__]
-    #
-    # pp server.api_methods
-    # [:links, :launch, :clone, :deployment, :next_instance, :alert_specs, :alerts, :created_at, :state, :updated_at, :description, :name, :href, :destroy, :update, :show]
+      # Query all Servers in deployment
+      deployment.servers.index.each do |server|
+        server_type='server'
 
-    if defined? server.show.current_instance == "method"
-      puts "Current Instance"
-      #puts "Current Instance Type: #{server.show.current_instance.show(:view => "extended").instance_type.show.name}"
-    else
-      puts "Next Instance"
-      #puts "Next Instance Type: #{server.show.next_instance.show(:view => "extended").instance_type.show.name}"
-    end
+        if defined? server.show.current_instance == "method"
+          instance_lineage='current'
+          instance_name=server.show.current_instance.show(:view => "extended").name.to_s
+          instance_state=server.show.current_instance.show(:view => "extended").state.to_s
+          instance_datacenter=server.show.current_instance.show(:view =>'extended').datacenter.show.name.to_s
+          instance_type=''
+          if defined? server.show.current_instance.show(:view => "extended").instance_type == "method"
+            instance_type=server.show.current_instance.show(:view => "extended").instance_type.show.name.to_s
+          end
+          f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\""
 
-  end
+        else #else current_instance does not exist.. will audit next instance
+          instance_lineage='next'
+          instance_name=server.show.next_instance.show.name.to_s
+          instance_state=server.show.next_instance.show(:view => "extended").state.to_s
+          instance_datacenter=server.show.next_instance.show(:view => "extended").cloud.show.name.to_s
+          instance_type=''
+          if defined? server.show.next_instance.show(:view => "extended").instance_type == "method"
+            instance_type=server.show.next_instance.show(:view => "extended").instance_type.show.name.to_s
+          end
+          f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\""
 
-  deployment.server_arrays.index.each do |sa|
+        end #end if current_instances
+      end #end servers.each
 
-  end
 
-end
+
+      # Query all ServerArrays in deployment
+      deployment.server_arrays.index.each do |sa|
+        server_type='array'
+        if sa.show.current_instances.index.count > 0
+
+          sa.show.current_instances.index(:view => 'extended').each do |instance|
+            instance_lineage='current'
+            instance_name=instance.show(:view => "extended").name.to_s
+            instance_state=instance.show(:view => "extended").state.to_s
+            instance_datacenter=instance.show(:view =>'extended').cloud.show.name.to_s
+            instance_type=''
+            if defined? instance.show(:view => "extended").instance_type == "method"
+              instance_type=instance.instance_type.show.name.to_s
+            end
+            f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\""
+          end
+        else
+          instance_lineage='next'
+          instance_name=sa.next_instance.show(:view => "extended").name.to_s
+          instance_state=sa.next_instance.show(:view => "extended").state.to_s
+          instance_datacenter=sa.next_instance.show(:view =>'extended').cloud.show.name.to_s
+          instance_type=''
+          if defined? sa.next_instance.show(:view => "extended").instance_type == "method"
+            instance_type=sa.next_instance.show(:view => "extended").instance_type.show.name.to_s
+          end
+          f.puts "\"#{deployment_name}\",\"#{server_type}\",\"#{instance_lineage}\",\"#{instance_name}\",\"#{instance_type}\",\"#{instance_datacenter}\",\"#{instance_state}\""
+
+        end #end if count==0
+      end#end server_arrays.each
+
+
+    end #end deployments.each
+end #end File.open
