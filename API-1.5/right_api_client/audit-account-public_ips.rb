@@ -25,6 +25,7 @@ puts ENV.has_key?('rs_acct') ? 'rs_acct set by ENVIRONMENT' : 'rs_acct set by SC
 
 puts "Authenticated!"
 
+# Loop through all Servers
 @client.servers.index.each do |s|
 
     if defined? s.show.current_instance.show == "method"
@@ -32,11 +33,12 @@ puts "Authenticated!"
     end
 
 end
+
+# Loop through all ServerArrays
 @client.server_arrays.index.each do |sa|
 
     sa.current_instances.index.each do |i|
       puts i.public_ip_addresses
     end
-
 
 end
