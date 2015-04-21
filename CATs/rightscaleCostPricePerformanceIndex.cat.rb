@@ -14,7 +14,7 @@ resource 'cppi_mysql_db', type: 'server' do
   security_groups 'monkey_private_ports_open'
   ## ServerTemplate - Use 'ALERTS-DISABLED' version for dev and debugging
   #server_template find('Database Manager for MySQL 5.5 (v13.5.7-LTS)', revision: 28) # RS Published DB Manager for MySQL 5.5 ST
-  server_template find('ALERTS-DISABLED - Database Manager for MySQL 5.5 (v13.5.7-LTS)', revision: 0) # Clones ST dev and debugging
+  server_template find('ALERTS-DISABLED - Database Manager for MySQL 5.5 (v13.5.7-LTS)', revision: 1) # Cloned ST for dev and debugging
   inputs do {
     # BLOCK_DEVICE
     'block_device/devices/default/backup/secondary/cloud' => 'text:s3',
@@ -25,7 +25,7 @@ resource 'cppi_mysql_db', type: 'server' do
     'db/backup/lineage' => 'text:test-backup-lineage-20140812',
     # DB / dns
     'db/dns/master/fqdn' => 'text:cppioregon.rightscale-services.com',
-    'db/dns/master/id' => 'text:15757914',
+    'db/dns/master/id' => 'text:16985456', # cppioregon.rightscale-services.com <=> DNSMadeEasy Dynamic DNS ID: 16985456
     # DB / dump
     'db/dump/container' => 'text:cppi-app',
     'db/dump/database_name' => 'text:rsmarcomblog',
@@ -56,5 +56,6 @@ end
 define launch_phase1(@cppi_mysql_db) task_label: "Setup MySQL DB" do
   provision(@cppi_mysql_db)
   @current_instance = @cppi_mysql_db.current_instance()
-  @current_instance.run_executable(recipe_name: "db::do_dump_import")
+  @current_instance.run_executable(recipe_name: "db::do_init_and_become_master") #Initializes DB and sets DNS
+  @current_instance.run_executable(recipe_name: "db::do_dump_import") #Imports mysqldump to DB
 end
