@@ -1,6 +1,7 @@
 name 'RightScale Cost-Price-Performance Index'
 rs_ca_ver 20131202
 short_description 'Launch the RightScale Cost-Price-Performance Index CloudApp'
+# CAT Developed by: Bryan Karaffa (April 2015)
 
 ## User Parameters and Mappings
 
