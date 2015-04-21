@@ -119,7 +119,7 @@ end
 
 ## custom_launch operation Definition
 define custom_launch(@cppi_mysql_db_server, @cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray) do
-  #call launch_phase1(@cppi_mysql_db_server)
+  call launch_phase1(@cppi_mysql_db_server)
   call launch_phase2(@cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray)
 end
 
