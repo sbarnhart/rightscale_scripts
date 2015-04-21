@@ -12,7 +12,9 @@ resource 'cppi_mysql_db', type: 'server' do
   multi_cloud_image find('RightImage_CentOS_6.5_x64_v13.5_LTS', revision: 11)
   ssh_key 'default'
   security_groups 'monkey_private_ports_open'
-  server_template find('Database Manager for MySQL 5.5 (v13.5.7-LTS)', revision: 28)
+  ## ServerTemplate - Use 'ALERTS-DISABLED' version for dev and debugging
+  #server_template find('Database Manager for MySQL 5.5 (v13.5.7-LTS)', revision: 28) # RS Published DB Manager for MySQL 5.5 ST
+  server_template find('ALERTS-DISABLED - Database Manager for MySQL 5.5 (v13.5.7-LTS)', revision: 0) # Clones ST dev and debugging
   inputs do {
     # BLOCK_DEVICE
     'block_device/devices/default/backup/secondary/cloud' => 'text:s3',
@@ -53,5 +55,6 @@ end
 
 define launch_phase1(@cppi_mysql_db) task_label: "Setup MySQL DB" do
   provision(@cppi_mysql_db)
-  @@cppi_mysql_db.run_executable(recipe_name: "db::do_dump_import")
+  @current_instance = @cppi_mysql_db.current_instance()
+  @current_instance.run_executable(recipe_name: "db::do_dump_import")
 end
