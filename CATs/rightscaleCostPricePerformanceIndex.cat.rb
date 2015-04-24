@@ -4,12 +4,22 @@ short_description 'Launch the RightScale Cost-Price-Performance Index CloudApp'
 # CAT Developed by: Bryan Karaffa (April 2015)
 
 ## User Parameters and Mappings
+parameter "cppi_instance_type" do
+  type "string"
+  label "Instance Type"
+  description "Instance types comprise varying combinations of CPU, memory, storage, and networking capacity to fit different use cases.  There are General Purpose (t,m), Compute Optimized (c), Memory Optimized (r), GPU Optimized (g), and Storage Optimized (i,d) instance types."
+  # Invalid allowed_values: t2.micro, r3.large will not work for this CloudApp
+  # Tested allowed_values: m1.small, c3.large
+  allowed_values "t2.small", "t2.medium", "m1.small", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge", "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge", "g2.2xlarge", "g2.8xlarge", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge", "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.8xlarge", "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge"
+  default "m1.small"
+end
 
 
 ## MySQL DB Server Resource
 resource 'cppi_mysql_db_server', type: 'server' do
   name 'CPPI MySQL DB Server [Database Manager for MySQL 5.5 (v13.5.7-LTS)]'
   cloud 'EC2 us-west-2'
+  instance_type $cppi_instance_type
   multi_cloud_image find('RightImage_CentOS_6.5_x64_v13.5_LTS', revision: 11)
   ssh_key 'default'
   security_groups 'monkey_private_ports_open'
@@ -47,6 +57,7 @@ end
 resource 'cppi_loadbalancer_server1', type: 'server' do
   name 'CPPI Load Balancer #1 [Load Balancer with HAProxy (v13.5.5-LTS)]'
   cloud 'EC2 us-west-2'
+  instance_type $cppi_instance_type
   multi_cloud_image find('RightImage_CentOS_6.5_x64_v13.5_LTS', revision: 11)
   ssh_key 'default'
   security_groups 'monkey_private_ports_open'
@@ -72,6 +83,7 @@ end
 resource 'cppi_app_serverarray', type: 'server_array' do
   name 'CPPI PHP App Servers [PHP App Server (v13.5.5-LTS)]'
   cloud 'EC2 us-west-2'
+  instance_type $cppi_instance_type
   ssh_key 'default'
   security_groups 'default', 'monkey_private_ports_open'
   ## ServerTemplate - Use 'ALERTS-DISABLED' version for dev and debugging
@@ -111,6 +123,29 @@ resource 'cppi_app_serverarray', type: 'server_array' do
   } end
 end
 
+## Outputs for CloudApp
+output 'lb1_public_ip' do
+  label "Front-End Server #1 URL"
+  category "Info"
+  default_value join(["Public URL: http://", @cppi_loadbalancer_server1.public_ip_address],"/")
+  description "Front-End Server #1 Public IP"
+end
+
+output 'lb2_public_ip' do
+  label "Front-End Server #2 URL"
+  category "Info"
+  default_value join(["Public URL: http://", @cppi_loadbalancer_server2.public_ip_address],"/")
+  description "Front-End Server #2 Public IP"
+end
+
+output 'instance_type' do
+  label 'Configuration'
+  category 'Info'
+  default_value $cppi_instance_type
+  description "Instance type specified when launching this CloudApp"
+end
+
+
 
 ## Override the 'autolaunch' operation with our own custom `launch_concurrent` operation
 operation "launch" do
@@ -118,34 +153,53 @@ operation "launch" do
 end
 
 
-## custom_launch operation Definition
-define custom_launch(@cppi_mysql_db_server, @cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray) do
-  call launch_phase1(@cppi_mysql_db_server)
-  call launch_phase2(@cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray)
-end
+## custom_launch Definition
+define custom_launch(@cppi_mysql_db_server, @cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray) return @cppi_mysql_db_server, @cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray do
+  concurrent return @cppi_mysql_db_server, @cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray timeout: 120m do
 
-## LaunchPhase 1 operation Definition
-define launch_phase1(@cppi_mysql_db_server) task_label: "Setup MySQL DB" do
-  provision(@cppi_mysql_db_server)
-  @currentInstance = @cppi_mysql_db_server.current_instance()
-  @currentInstance.run_executable(recipe_name: "db::do_init_and_become_master") #Initializes DB and sets DNS
-  @currentInstance.run_executable(recipe_name: "db::do_dump_import") #Imports mysqldump to DB
-end
+    ## Phase 1 - Setup and Deploy MySQL DB Server
+    sub task_label: "Setup Database Server" do
+      provision(@cppi_mysql_db_server)
+      @currentInstance = @cppi_mysql_db_server.current_instance()
+      call run_recipe(@currentInstance, "db::do_init_and_become_master") #Initializes DB and sets DNS
+      call run_recipe(@currentInstance, "db::do_dump_import") #Imports mysqldump to DB
+    end
+    ## End Phase 1
 
-## LaunchPhase 2 operation Definition
-define launch_phase2(@cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray) task_label: "Setup Load Balancers and App ServerArray" do
-  # Provision LoadBalancer Servers concurrently
-  concurrent timeout: 30m do
-    sub do
+    ## Phase 2 - Setup and Deploy Load Balance Servers and App ServerArray
+    # Provision LB1
+    sub task_label: "Setup Front-End Server #1" do
       provision(@cppi_loadbalancer_server1)
     end
-    sub do
+    # Provision LB2
+    sub task_label: "Setup Front-End Server #2"  do
       provision(@cppi_loadbalancer_server2)
     end
-  end
+    # Provision App ServerArray and attach to LoadBalancers
+    sub task_label: "Setup App ServerArray" do
+      provision(@cppi_app_serverarray)
+      call multi_run_recipe(@cppi_app_serverarray, "app::do_loadbalancers_allow")
+      call multi_run_recipe(@cppi_app_serverarray, "lb::do_attach_request")
+    end
+    ## End Phase 2
 
-  # Provision App ServerArray and attach to LoadBalancers
-  provision(@cppi_app_serverarray)
-  @cppi_app_serverarray.multi_run_executable(recipe_name: "app::do_loadbalancers_allow")
-  @cppi_app_serverarray.multi_run_executable(recipe_name: "lb::do_attach_request")
+  end # End concurrent
+end ## End custom_launch Definition
+
+
+# Helper definitions, runs a recipe on given resource, waits until recipe completes or fails
+# Raises an error in case of failure
+define run_recipe(@target, $recipe_name) do
+  @task = @target.current_instance().run_executable(recipe_name: $recipe_name, inputs: {})
+  sleep_until(@task.summary =~ "^(completed|failed)")
+  if @task.summary =~ "failed"
+    raise "Failed to run " + $recipe_name
+  end
+end
+define multi_run_recipe(@target, $recipe_name) do
+  @tasks = @target.current_instances().run_executable(recipe_name: $recipe_name, inputs: {})
+  sleep_until(all?(@task.summary[], "/^(completed|failed)/"))
+  if any?(@task.summary[], "/failed/")
+    raise "Failed to run " + $recipe_name
+  end
 end
