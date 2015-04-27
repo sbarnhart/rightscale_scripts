@@ -127,14 +127,14 @@ end
 output 'lb1_public_ip' do
   label "Front-End Server #1 URL"
   category "Info"
-  default_value join(["Public URL: http://", @cppi_loadbalancer_server1.public_ip_address],"/")
+  default_value join(["Public URL: http://", @cppi_loadbalancer_server1.public_ip_address])
   description "Front-End Server #1 Public IP"
 end
 
 output 'lb2_public_ip' do
   label "Front-End Server #2 URL"
   category "Info"
-  default_value join(["Public URL: http://", @cppi_loadbalancer_server2.public_ip_address],"/")
+  default_value join(["Public URL: http://", @cppi_loadbalancer_server2.public_ip_address])
   description "Front-End Server #2 Public IP"
 end
 
