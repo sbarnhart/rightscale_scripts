@@ -155,14 +155,13 @@ end
 
 ## custom_launch Definition
 define custom_launch(@cppi_mysql_db_server, @cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray) return @cppi_mysql_db_server, @cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray do
-  concurrent return @cppi_mysql_db_server, @cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray timeout: 120m do
+  concurrent return @cppi_mysql_db_server, @cppi_loadbalancer_server1, @cppi_loadbalancer_server2, @cppi_app_serverarray timeout: 120m, task_label: "Launching CPPI CloudApp" do
 
     ## Phase 1 - Setup and Deploy MySQL DB Server
     sub task_label: "Setup Database Server" do
       provision(@cppi_mysql_db_server)
-      @currentInstance = @cppi_mysql_db_server.current_instance()
-      call run_recipe(@currentInstance, "db::do_init_and_become_master") #Initializes DB and sets DNS
-      call run_recipe(@currentInstance, "db::do_dump_import") #Imports mysqldump to DB
+      call run_recipe(@cppi_mysql_db_server, "db::do_init_and_become_master") #Initializes DB and sets DNS
+      call run_recipe(@cppi_mysql_db_server, "db::do_dump_import") #Imports mysqldump to DB
     end
     ## End Phase 1
 
@@ -187,7 +186,7 @@ define custom_launch(@cppi_mysql_db_server, @cppi_loadbalancer_server1, @cppi_lo
 end ## End custom_launch Definition
 
 
-# Helper definitions, runs a recipe on given resource, waits until recipe completes or fails
+# Helper definition, runs a recipe on given resource, waits until recipe completes or fails
 # Raises an error in case of failure
 define run_recipe(@target, $recipe_name) do
   @task = @target.current_instance().run_executable(recipe_name: $recipe_name, inputs: {})
@@ -198,8 +197,8 @@ define run_recipe(@target, $recipe_name) do
 end
 define multi_run_recipe(@target, $recipe_name) do
   @tasks = @target.current_instances().run_executable(recipe_name: $recipe_name, inputs: {})
-  sleep_until(all?(@task.summary[], "/^(completed|failed)/"))
-  if any?(@task.summary[], "/failed/")
+  sleep_until(all?(@tasks.summary[], "/^(completed|failed)/"))
+  if any?(@tasks.summary[], "/failed/")
     raise "Failed to run " + $recipe_name
   end
 end
