@@ -12,7 +12,7 @@ acct_id = ENV['rs_acct'] || '12345'                  # RS Account to login to
 
 
 # Optional Inputs
-timeout = ENV['rs_timeout'] || 60                    # Timeout in Seconds
+timeout = ENV['rs_timeout'] || 600                    # Timeout in Seconds
 
 
 puts ENV.has_key?('rs_email') ? 'rs_email set by ENVIRONMENT' : 'rs_email set by SCRIPT [default]'
