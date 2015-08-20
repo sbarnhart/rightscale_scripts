@@ -3,6 +3,10 @@
 #  Compares the time it takes for a raw instance to be launched when
 #  using the RS API vs Cloud API [EC2 and GCE]
 #
+#  Requires:
+#  AWS EC2 CLI Tools [http://docs.aws.amazon.com/AWSEC2/latest/CommandLineReference/ec2-cli-get-set-up.html]
+#  RightScale rsc [https://github.com/rightscale/rsc]
+#  curl
 
 # Global Parameters
 
