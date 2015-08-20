@@ -7,6 +7,8 @@
 #  AWS EC2 CLI Tools [http://docs.aws.amazon.com/AWSEC2/latest/CommandLineReference/ec2-cli-get-set-up.html]
 #  RightScale rsc [https://github.com/rightscale/rsc]
 #  curl
+#
+#  Developed and tested on Ubuntu 14.04 [2015-08-20]
 
 # Global Parameters
 
