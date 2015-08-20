@@ -36,16 +36,16 @@ launchInstanceUsingRS(){
 	-X POST https://my.rightscale.com/api/clouds/1/instances | grep "Location: /api/clouds/")"
 	instance_href="${instance_href:10}"
 	instance_href="$(echo -e "${instance_href}" | tr -d '[[:space:]]')"
-	InstanceResourceId=`/home/bryankaraffa/Applications/rsc/rsc --x1 .resource_uid cm15 show ${instance_href}`
+	RsInstanceResourceId=`/home/bryankaraffa/Applications/rsc/rsc --x1 .resource_uid cm15 show ${instance_href}`
 
 
 	## Wait for instance to pass AWS status checks	
 	rs_launch_in_progress="true"
 	while [ "$rs_launch_in_progress" == "true" ]
 	do		
-		read -a responseArray <<< $(ec2-describe-instance-status $InstanceResourceId)
+		read -a RSresponseArray <<< $(ec2-describe-instance-status $RsInstanceResourceId)
 		
-		if [ "${responseArray[5]}" == "ok" ] && [ "${responseArray[6]}" == "ok" ] && [ "${responseArray[10]}" == "passed" ] && [ "${responseArray[13]}" == "passed" ]
+		if [ "${RSresponseArray[5]}" == "ok" ] && [ "${RSresponseArray[6]}" == "ok" ] && [ "${RSresponseArray[10]}" == "passed" ] && [ "${RSresponseArray[13]}" == "passed" ]
 		then
 			rs_launch_in_progress=false
 		fi
@@ -54,31 +54,28 @@ launchInstanceUsingRS(){
 	rs_endTime=`date +%s`
 	rs_launchTime=`expr $rs_endTime - $rs_startTime`
 	echo $rs_launchTime > rs_launchTime.txt	
+	sleep 3
+	ec2-terminate-instances $RsInstanceResourceId &> /dev/null
 }
 
 launchInstanceUsingEC2(){
 	ec2_startTime=`date +%s`
 	
-	# ubuntu/images/ubuntu-precise-12.04-amd64-server-20150819 - ami-ef6cdc84
-	# Root device type: instance-store Virtualization type: paravirtual
-	# ---
-	# ubuntu/images/hvm-instance/ubuntu-precise-12.04-amd64-server-20150819 - ami-2155e54a
-	# Root device type: instance-store Virtualization type: hvm
 	ImageId='ami-ef6cdc84'
 	KeyName='bk-test-ssh-key'
 	InstanceType='m1.small'
 
 	#Launch the instance and get resource id from response
 	read -a response <<< $(ec2-run-instances -v $ImageId -k $KeyName -t $InstanceType --aws-access-key $AWS_ACCESS_KEY --aws-secret-key $AWS_SECRET_KEY | grep 'INSTANCE')
-	InstanceResourceId=${response[1]}
+	Ec2InstanceResourceId=${response[1]}
 	
-	ec2-create-tags $InstanceResourceId --tag 'Name=Test-Raw-Instance_fromAWS-API' &> /dev/null
+	ec2-create-tags $Ec2 --tag 'Name=Test-Raw-Instance_fromAWS-API' &> /dev/null
 	ec2_launch_in_progress="true"
 	while [ "$ec2_launch_in_progress" == "true" ]
 	do		
-		read -a responseArray <<< $(ec2-describe-instance-status $InstanceResourceId)
+		read -a EC2responseArray <<< $(ec2-describe-instance-status $Ec2InstanceResourceId)
 		
-		if [ "${responseArray[5]}" == "ok" ] && [ "${responseArray[6]}" == "ok" ] && [ "${responseArray[10]}" == "passed" ] && [ "${responseArray[13]}" == "passed" ]
+		if [ "${EC2responseArray[5]}" == "ok" ] && [ "${EC2responseArray[6]}" == "ok" ] && [ "${EC2responseArray[10]}" == "passed" ] && [ "${EC2responseArray[13]}" == "passed" ]
 		then
 			ec2_launch_in_progress=false
 		fi
@@ -86,6 +83,8 @@ launchInstanceUsingEC2(){
 	ec2_endTime=`date +%s`
 	ec2_launchTime=`expr $ec2_endTime - $ec2_startTime`
 	echo $ec2_launchTime > ec2_launchTime.txt
+	sleep 3
+	ec2-terminate-instances $Ec2InstanceResourceId &> /dev/null
 }
 
 #  Begin the Benchmark
@@ -93,7 +92,7 @@ clear
 launchInstanceUsingEC2 &
 launchInstanceUsingRS &
 wait
-
+clear
 # Print Results
 echo ""
 echo "----- Results -----"
