@@ -18,16 +18,16 @@ RS_ACCT=${rs_acct:='12345'}             	# RS Account ID
 
 # Functions
 launchInstanceUsingRS(){
-	## Execute API Call to retrieve cookie and save it to mycookie
+	## Execute API Call to authenticate and retrieve session cookie
 	curl -s -l -H X_API_VERSION:1.5 -c mycookie \
 	-d email="$RS_EMAIL" \
 	-d password="$RS_PASSWORD" \
 	-d account_href="/api/accounts/$RS_ACCT" \
 	-X POST https://my.rightscale.com/api/session
 	
-	
+		
+	## Launch the instance and get the resource_uid
 	rs_startTime=`date +%s`
-	## Launch Instance and get the resource_uid
 	instance_href="$(curl -s -i -l -H X_API_VERSION:1.5 -b mycookie \
 	-d instance[image_href]='/api/clouds/1/images/BT0FJ9DJ8VOJ4' \
 	-d instance[ssh_key_href]='/api/clouds/1/ssh_keys/9AQBF50L4A8O5' \
@@ -54,22 +54,26 @@ launchInstanceUsingRS(){
 	rs_endTime=`date +%s`
 	rs_launchTime=`expr $rs_endTime - $rs_startTime`
 	echo $rs_launchTime > rs_launchTime.txt	
+	
+	# Clean up the instances to prevent incurring additional costs
 	sleep 3
 	ec2-terminate-instances $RsInstanceResourceId &> /dev/null
 }
 
 launchInstanceUsingEC2(){
-	ec2_startTime=`date +%s`
-	
 	ImageId='ami-ef6cdc84'
 	KeyName='bk-test-ssh-key'
 	InstanceType='m1.small'
 
-	#Launch the instance and get resource id from response
+	## Launch the instance and get resource_uid
+	ec2_startTime=`date +%s`
 	read -a response <<< $(ec2-run-instances -v $ImageId -k $KeyName -t $InstanceType --aws-access-key $AWS_ACCESS_KEY --aws-secret-key $AWS_SECRET_KEY | grep 'INSTANCE')
 	Ec2InstanceResourceId=${response[1]}
 	
-	ec2-create-tags $Ec2 --tag 'Name=Test-Raw-Instance_fromAWS-API' &> /dev/null
+	ec2-create-tags $Ec2InstanceResourceId --tag 'Name=Test-Raw-Instance_fromAWS-API' &> /dev/null
+	
+	
+	## Wait for instance to pass AWS status checks	
 	ec2_launch_in_progress="true"
 	while [ "$ec2_launch_in_progress" == "true" ]
 	do		
@@ -80,9 +84,12 @@ launchInstanceUsingEC2(){
 			ec2_launch_in_progress=false
 		fi
 	done
+	
 	ec2_endTime=`date +%s`
 	ec2_launchTime=`expr $ec2_endTime - $ec2_startTime`
 	echo $ec2_launchTime > ec2_launchTime.txt
+	
+	# Clean up the instances to prevent incurring additional costs
 	sleep 3
 	ec2-terminate-instances $Ec2InstanceResourceId &> /dev/null
 }
