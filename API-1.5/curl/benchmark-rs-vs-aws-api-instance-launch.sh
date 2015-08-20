@@ -89,9 +89,6 @@ launchInstanceUsingEC2(){
 
 #  Begin the Benchmark
 clear
-touch rs_launchTime.txt
-touch ec2_launchTime.txt
-
 launchInstanceUsingEC2 &
 launchInstanceUsingRS &
 wait
@@ -106,3 +103,4 @@ cat rs_launchTime.txt
 echo '----- ------- -----'
 echo "$(date +%s) $(cat ec2_launchTime.txt) $(cat rs_launchTime.txt)" >> benchmarks.log
 echo 'Done!'
+rm ec2_launchTime.txt rs_launchTime.txt mycookie
