@@ -102,11 +102,13 @@ launchInstanceUsingEC2(){
 
 #  Begin the Benchmark
 clear
-#launchInstanceUsingEC2 &
+launchInstanceUsingEC2 &
 launchInstanceUsingRS &
 wait
-clear
+
 # Print Results
+clear
+
 echo ""
 echo "----- Results -----"
 echo 'EC2 API Launch Time in seconds:'
