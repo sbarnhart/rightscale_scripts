@@ -108,6 +108,7 @@ cat ec2_launchTime.txt
 echo 'RS API Launch Time in seconds:'
 cat rs_launchTime.txt
 echo '----- ------- -----'
+echo 'Results appended to benchmarks.log [timestamp ec2_launchTime rs_launchTime]'
 echo "$(date +%s) $(cat ec2_launchTime.txt) $(cat rs_launchTime.txt)" >> benchmarks.log
 echo 'Done!'
 rm ec2_launchTime.txt rs_launchTime.txt
