@@ -42,7 +42,7 @@ launchInstanceUsingRS(){
 	-X POST https://my.rightscale.com/api/clouds/1/instances | grep "Location: /api/clouds/")"
 	instance_href="${instance_href:10}"
 	instance_href="$(echo -e "${instance_href}" | tr -d '[[:space:]]')"
-	RsInstanceResourceId=`/home/bryankaraffa/Applications/rsc/rsc --x1 .resource_uid cm15 show ${instance_href}`
+	RsInstanceResourceId=`rsc --x1 .resource_uid cm15 show ${instance_href}`
 
 
 	## Wait for instance to pass AWS status checks	
@@ -102,7 +102,7 @@ launchInstanceUsingEC2(){
 
 #  Begin the Benchmark
 clear
-launchInstanceUsingEC2 &
+#launchInstanceUsingEC2 &
 launchInstanceUsingRS &
 wait
 clear
