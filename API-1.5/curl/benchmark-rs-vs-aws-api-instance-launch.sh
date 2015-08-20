@@ -32,7 +32,7 @@ launchInstanceUsingRS(){
 	-d instance[image_href]='/api/clouds/1/images/BT0FJ9DJ8VOJ4' \
 	-d instance[ssh_key_href]='/api/clouds/1/ssh_keys/9AQBF50L4A8O5' \
 	-d instance[instance_type_href]='/api/clouds/1/instance_types/CQQV62T389R32' \
-	-d instance[name]='Test-Raw-Instance_fromRSAPI' \
+	-d instance[name]='Test-Raw-Instance_fromRS-API' \
 	-X POST https://my.rightscale.com/api/clouds/1/instances | grep "Location: /api/clouds/")"
 	instance_href="${instance_href:10}"
 	instance_href="$(echo -e "${instance_href}" | tr -d '[[:space:]]')"
@@ -72,6 +72,7 @@ launchInstanceUsingEC2(){
 	read -a response <<< $(ec2-run-instances -v $ImageId -k $KeyName -t $InstanceType --aws-access-key $AWS_ACCESS_KEY --aws-secret-key $AWS_SECRET_KEY | grep 'INSTANCE')
 	InstanceResourceId=${response[1]}
 	
+	ec2-create-tags $InstanceResourceId --tag 'Name=Test-Raw-Instance_fromAWS-API' &> /dev/null
 	ec2_launch_in_progress="true"
 	while [ "$ec2_launch_in_progress" == "true" ]
 	do		
@@ -103,4 +104,4 @@ cat rs_launchTime.txt
 echo '----- ------- -----'
 echo "$(date +%s) $(cat ec2_launchTime.txt) $(cat rs_launchTime.txt)" >> benchmarks.log
 echo 'Done!'
-rm ec2_launchTime.txt rs_launchTime.txt mycookie
+rm ec2_launchTime.txt rs_launchTime.txt
