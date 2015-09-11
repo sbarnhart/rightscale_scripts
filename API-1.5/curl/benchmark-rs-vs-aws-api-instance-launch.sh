@@ -6,7 +6,7 @@
 #  Requires:
 #  AWS EC2 CLI Tools [http://docs.aws.amazon.com/AWSEC2/latest/CommandLineReference/ec2-cli-get-set-up.html]
 #  RightScale rsc [https://github.com/rightscale/rsc]
-#  curl
+#    ** Make sure rsc is setup [Use `rsc setup`] **
 #
 #  Developed and tested on Ubuntu 14.04 [2015-08-20]
 
@@ -17,31 +17,14 @@ AWS_ACCESS_KEY=${AWS_ACCESS_KEY:='ABC__replace_with_aws_access_key_XYZ'}
 AWS_SECRET_KEY=${AWS_SECRET_KEY:='123XYZ__replace_with_aws_secret_key__XXX'}
 
 ## RightScale Account Credentials
-RS_EMAIL=${rs_email:='your@email.com'}     	# RS User Account
-RS_PASSWORD=${rs_pswd:='yourpassword'}      # RS User Password
-RS_ACCT=${rs_acct:='12345'}             	# RS Account ID
+## Use `rsc setup` to configure RSC
 
 
 # Functions
 launchInstanceUsingRS(){
-	## Execute API Call to authenticate and retrieve session cookie
-	curl -s -l -H X_API_VERSION:1.5 -c mycookie \
-	-d email="$RS_EMAIL" \
-	-d password="$RS_PASSWORD" \
-	-d account_href="/api/accounts/$RS_ACCT" \
-	-X POST https://my.rightscale.com/api/session
-	
-		
-	## Launch the instance and get the resource_uid
 	rs_startTime=`date +%s`
-	instance_href="$(curl -s -i -l -H X_API_VERSION:1.5 -b mycookie \
-	-d instance[image_href]='/api/clouds/1/images/BT0FJ9DJ8VOJ4' \
-	-d instance[ssh_key_href]='/api/clouds/1/ssh_keys/9AQBF50L4A8O5' \
-	-d instance[instance_type_href]='/api/clouds/1/instance_types/CQQV62T389R32' \
-	-d instance[name]='Test-Raw-Instance_fromRS-API' \
-	-X POST https://my.rightscale.com/api/clouds/1/instances | grep "Location: /api/clouds/")"
-	instance_href="${instance_href:10}"
-	instance_href="$(echo -e "${instance_href}" | tr -d '[[:space:]]')"
+	## Launch the instance and get the resource_uid
+	instance_href=`rsc cm15 create /api/clouds/1/instances 'instance[image_href]=/api/clouds/1/images/BT0FJ9DJ8VOJ4' 'instance[ssh_key_href]' 'instance[instance_type_href]=/api/clouds/1/instance_types/CQQV62T389R32' 'instance[name]=Test-Raw-Instance_fromRS-API' --xh Location`
 	RsInstanceResourceId=`rsc --x1 .resource_uid cm15 show ${instance_href}`
 
 
