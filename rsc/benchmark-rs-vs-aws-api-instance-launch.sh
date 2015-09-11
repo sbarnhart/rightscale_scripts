@@ -10,22 +10,29 @@
 #
 #  Developed and tested on Ubuntu 14.04 [2015-08-20]
 
-# Global Parameters
+# Parameters
 
 ## AWS Account Credentials
 AWS_ACCESS_KEY=${AWS_ACCESS_KEY:='ABC__replace_with_aws_access_key_XYZ'}
 AWS_SECRET_KEY=${AWS_SECRET_KEY:='123XYZ__replace_with_aws_secret_key__XXX'}
 
-## RightScale Account Credentials
-## Use `rsc setup` to configure RSC
+## RightScale Launch Options
+ImageHref='/api/clouds/1/images/BT0FJ9DJ8VOJ4'
+InstanceTypeHref='/api/clouds/1/instance_types/CQQV62T389R32'
+RsInstanceName='Test-Raw-Instance_fromRS-API'
+
+## AWS API Launch Parameters
+ImageId='ami-ef6cdc84'
+InstanceType='m1.small'
+AwsInstanceName='Test-Raw-Instance_fromAWS-API'
 
 
 # Functions
 launchInstanceUsingRS(){
 	rs_startTime=`date +%s`
 	## Launch the instance and get the resource_uid
-	instance_href=`rsc cm15 create /api/clouds/1/instances 'instance[image_href]=/api/clouds/1/images/BT0FJ9DJ8VOJ4' 'instance[ssh_key_href]' 'instance[instance_type_href]=/api/clouds/1/instance_types/CQQV62T389R32' 'instance[name]=Test-Raw-Instance_fromRS-API' --xh Location`
-	RsInstanceResourceId=`rsc --x1 .resource_uid cm15 show ${instance_href}`
+	InstanceHref=`rsc cm15 create /api/clouds/1/instances "instance[image_href]=${ImageHref}" "instance[instance_type_href]=${InstanceTypeHref}" "instance[name]=${RsInstanceName}" --xh Location`
+	RsInstanceResourceId=`rsc --x1 .resource_uid cm15 show ${InstanceHref}`
 
 
 	## Wait for instance to pass AWS status checks	
@@ -50,16 +57,12 @@ launchInstanceUsingRS(){
 }
 
 launchInstanceUsingEC2(){
-	ImageId='ami-ef6cdc84'
-	KeyName='bk-test-ssh-key'
-	InstanceType='m1.small'
-
 	## Launch the instance and get resource_uid
 	ec2_startTime=`date +%s`
-	read -a response <<< $(ec2-run-instances -v $ImageId -k $KeyName -t $InstanceType --aws-access-key $AWS_ACCESS_KEY --aws-secret-key $AWS_SECRET_KEY | grep 'INSTANCE')
+	read -a response <<< $(ec2-run-instances -v $ImageId -t $InstanceType --aws-access-key $AWS_ACCESS_KEY --aws-secret-key $AWS_SECRET_KEY | grep 'INSTANCE')
 	Ec2InstanceResourceId=${response[1]}
 	
-	ec2-create-tags $Ec2InstanceResourceId --tag 'Name=Test-Raw-Instance_fromAWS-API' &> /dev/null
+	ec2-create-tags $Ec2InstanceResourceId --tag "Name=${AwsInstanceName}" &> /dev/null
 	
 	
 	## Wait for instance to pass AWS status checks	
